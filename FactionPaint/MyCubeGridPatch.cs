@@ -1,16 +1,13 @@
 ﻿using NLog;
 using Sandbox.Game.Entities;
+using Sandbox.Game.World;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Torch.Managers.PatchManager;
 using Torch.Utils;
 using VRage.Game;
-using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRage.Network;
 
 namespace FactionPaint
 {
@@ -24,9 +21,15 @@ namespace FactionPaint
         [ReflectedMethodInfo(typeof(MyCubeGridPatch), "ColorGridOrBlockRequestValidationPatch")]
         private static readonly MethodInfo requestValidationPatch;
         
-        public static bool ColorGridOrBlockRequestValidationPatch(MyCubeGrid __instance, ref bool __result, long player)
+        public static bool ColorGridOrBlockRequestValidationPatch(MyCubeGrid __instance, ref bool __result)
         {
-            if (player == 0L || !Sandbox.Game.Multiplayer.Sync.IsServer || __instance.BigOwners.Count == 0)
+
+            ulong user = MyEventContext.Current.Sender.Value;
+            long player = MySession.Static.Players.TryGetIdentityId(user);
+            MyAdminSettingsEnum adminSettings = MyAdminSettingsEnum.None;
+            MySession.Static.TryGetAdminSettings(user, out adminSettings);
+
+            if (player == 0L || !Sandbox.Game.Multiplayer.Sync.IsServer || __instance.BigOwners.Count == 0 || (adminSettings & MyAdminSettingsEnum.UseTerminals) > 0)
             {
                 __result = true;
             }
@@ -35,7 +38,7 @@ namespace FactionPaint
                 foreach (long bigOwner in __instance.BigOwners)
                 {
                     MyRelationsBetweenPlayerAndBlock relationPlayerBlock = MyIDModule.GetRelationPlayerBlock(bigOwner, player, MyOwnershipShareModeEnum.Faction, MyRelationsBetweenPlayerAndBlock.Enemies, MyRelationsBetweenFactions.Enemies, MyRelationsBetweenPlayerAndBlock.FactionShare);
-                    
+
                     if (relationPlayerBlock == MyRelationsBetweenPlayerAndBlock.Owner ||
                         relationPlayerBlock == MyRelationsBetweenPlayerAndBlock.FactionShare ||
                         relationPlayerBlock == MyRelationsBetweenPlayerAndBlock.NoOwnership)

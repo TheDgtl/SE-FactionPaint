@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/FactionPaint/bin/x64
+/FactionPaint/obj
+/.vs
